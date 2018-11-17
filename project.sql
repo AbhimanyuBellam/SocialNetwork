@@ -6,7 +6,7 @@ create table UserDetails(UID int(10) primary key auto_increment,UserName varchar
 
 -- insert into UserDetails values(2,"Rohith_Gilla","Rohith","Gilla","gilla@gmail.com","1234","offline");
 
-create table Friends(FID int(10) primary key,ToUID int(10),FromUID int(10), foreign key(ToUID) references UserDetails(UID),foreign key(FromUID) references UserDetails(UID));
+create table Friends(FID int(10) primary key auto_increment,ToUID int(10),FromUID int(10), foreign key(ToUID) references UserDetails(UID),foreign key(FromUID) references UserDetails(UID));
 
 -- insert into Friends values(1,2,1);
 
@@ -43,10 +43,16 @@ BEGIN
 #
 
 
-create procedure send_message(in from_uid int(10), in to_uid int(10),in msg varchar(1000),out response int (1))
+create procedure send_message(in from_email varchar(30), in to_email varchar(30),in msg varchar(1000),out response int (1))
 BEGIN
     declare t INTEGER;
-    if (SELECT count(*) from Friends where Friends.ToUID=to_uid  and Friends.FromUID=from_uid or Friends.ToUID=from_uid and Friends.FromUID=to_uid) !=0 THEN
+    declare sender VARCHAR(30);
+    declare receiver VARCHAR(30);
+    select UID into sender from UserDetails where Email=sender;
+    select UID into receiver from UserDetails where Email=receiver;
+
+
+    if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.Email=sender and Friends.FromUID=receiver) !=0 THEN
         select MID into t from Messages order by MID desc limit 1; 
         INSERT into Messages values (t+1,to_uid,from_uid,msg);
     end IF;
@@ -55,28 +61,38 @@ END;
 #
 
 
--- create procedure sign_in(in emailID varchar(30), in passW varchar(30), out response varchar )
--- BEGIN
---     if (select count(*) from UserDetails where UserDetails.Email=emailID and UserDetails.Pass=passW) !=0 THEN
---         update UserDetails set online_status="1" where UserDetails.Email=emailID;
---         set response:="Succesful";
---         select response as 'response';
---     else 
---         set response:="Invalid Email Id/Password";
---         select response as 'response';
-
---         end IF;
---     end;
--- #
-
-create PROCEDURE sign_in(in EmailID varchar(30),in PassW varchar(30),out response varchar(30))
- BEGIN
+create procedure sign_in(in EmailID varchar(30), in PassW varchar(30), out response varchar(30) )
+BEGIN
     if (select count(*) from UserDetails where UserDetails.Email=EmailID and UserDetails.Pass=PassW) !=0 THEN
-        update UserDetails set online_status="1" where UserDetails.Email=EmailID;
+        update UserDetails set online_status="1" where UserDetails.Email=emailID;
         set response:="Succesful";
         select response as 'response';
-    end IF;
-END;
+    else 
+        set response:="Invalid Email Id/Password";
+        select response as 'response';
+
+        end IF;
+    end;
+#
+
+
+create procedure create_friendship(sender varchar(30), receiver varchar(30),out response varchar(30))
+BEGIN
+    declare sender VARCHAR(30);
+    declare receiver VARCHAR(30);
+    select UID into sender from UserDetails where Email=sender;
+    select UID into receiver from UserDetails where Email=receiver;
+
+    if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.Email=sender and Friends.FromUID=receiver) !=0 THEN
+        set response:="You are already friends";
+        select response as 'response';
+
+    else 
+        insert into Friends(ToUID,FromUID) values(sender,receiver);
+        set response:="You are Friends now!";
+        select response as 'response';
+    end if;
+    end;
 #
 
 delimiter ;
