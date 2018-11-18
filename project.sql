@@ -1,3 +1,5 @@
+drop database dbms_project3;
+
 create database dbms_project3;
 use dbms_project3;
 create table UserDetails(UID int(10) primary key auto_increment,UserName varchar(20) not null,FName varchar(15) not null,LName varchar(15) not null,Email varchar(30) not null,Pass varchar(30) not null, UNIQUE(Email),online_status varchar(20));
@@ -17,7 +19,7 @@ create table Friends(FID int(10) primary key auto_increment,ToUID int(10),FromUI
 -- insert into Friends values(3,1,3);
 
 
-CREATE table Messages(MID int(10) primary key,ToUID int(10),FromUID int(10), Message varchar(1000),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+CREATE table Messages(MID int(10) primary key auto_increment,ToUID int(10),FromUID int(10), Msg varchar(1000),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
 -- INSERT into Messages values (1,2,1,"Wassup Gilla");
 
@@ -32,27 +34,27 @@ create table Albums(AID int(10) primary key auto_increment,UID int(10),Aname var
 create table Gallery (GID int(10) primary key auto_increment,AID int(10),Img blob, foreign key(AID) references Albums(AID));
 
 
-create table Posts(PID int(10) primary key auto_increment,UID int(10),Tweet varchar(1000),Img blob,NumComments int(10),NumLikes int(10));
+create table Posts(PID int(10) primary key auto_increment,UID int(10),Tweet varchar(1000),Img blob,NumComments int(10),NumLikes int(10),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
-create table Comments(CID int(10) primary key auto_increment,PID int(10),UIDCommenter int(10),Comment varchar(1000),foreign key(PID) references Posts(PID));
+create table Comments(CID int(10) primary key auto_increment,PID int(10),UIDCommenter int(10),Comment varchar(1000),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,foreign key(PID) references Posts(PID));
 
-create table Likes (LID int(10) primary key auto_increment,PID int(10),liker int(10),foreign key(PID) references Posts(PID));
+create table Likes (LID int(10) primary key auto_increment,PID int(10),liker int(10),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,foreign key(PID) references Posts(PID));
 
 
 delimiter #
 
 
-create procedure add_post(in email varchar(30),in tweet_info varchar(1000), in image_to_Add blob,out response varchar(40))
+create procedure add_post(in email varchar(30),in tweet_info varchar(1000), in image_to_Add blob,out response varchar(100))
 BEGIN
     declare u_id INTEGER;
     select UID into u_id from UserDetails where UserDetails.Email =email; 
-    insert into Posts values(null, u_id,tweet_info,image_to_Add,0,0);
+    insert into Posts(UID,Tweet,Img,NumComments,NumLikes) values(u_id,tweet_info,image_to_Add,0,0);
     set response:="Post Added";
     select response as 'response';
 END;
 #
 
-create PROCEDURE add_comment(in p_id int(10),in u_id_commenter int(10),in Comment_info varchar(1000),out response varchar(40))
+create PROCEDURE add_comment(in p_id int(10),in u_id_commenter int(10),in Comment_info varchar(1000),out response varchar(100))
 BEGIN
     declare t int(10);
     insert into Comments values(p_id, u_id_commenter,Comment_info);
@@ -64,15 +66,15 @@ BEGIN
 End;
 #
 
-create procedure add_like(in p_id int(10),liker int(10),out response varchar(30))
+create procedure add_like(in p_id int(10),liker1 int(10),out response varchar(100))
 BEGIN
     declare t integer;
-    select NumLikes into t where Posts.PID=p_id;
-    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker) !=0 THEN
+    select NumLikes into t from Posts where Posts.PID=p_id;
+    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker1) !=0 THEN
         set response:="You already liked post";
         select response as 'response';
     ELSE
-        INSERT into Likes values(Null,p_id,liker);
+        INSERT into Likes(PID,liker) values(p_id,liker1);
         update Posts set NumLikes=t+1 where Posts.PID=p_id;
         set response:="You liked post successfully";
         select response as 'response';
@@ -80,13 +82,13 @@ BEGIN
 END;
 #
 
-create procedure un_like(in p_id int(10),liker int(10),out response varchar(10))
+create procedure un_like(in p_id int(10),liker1 int(10),out response varchar(100))
 BEGIN
     declare t integer;
-    select NumLikes into t where Posts.PID=p_id;
-    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker) !=0 THEN
+    select NumLikes into t from Posts where Posts.PID=p_id;
+    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker1) !=0 THEN
         update Posts set NumLikes=t-1 where Posts.PID=p_id;
-        delete from Likes where Likes.PID=p_id and Likes.liker=liker;
+        delete from Likes where Likes.PID=p_id and Likes.liker=liker1;
         set response:="Unliked successfully";
         select response as 'response';
     ELSE
@@ -96,7 +98,7 @@ BEGIN
 END;
 #
 
-create procedure sign_up(in UserName varchar(20) ,in FName varchar(15) ,LName varchar(15) ,email varchar(30),pass_word varchar(30),out response varchar(30))
+create procedure sign_up(in UserName varchar(20) ,in FName varchar(15) ,LName varchar(15) ,email varchar(30),pass_word varchar(30),out response varchar(100))
 BEGIN
     declare t integer;
     if (select count(*) from UserDetails where UserDetails.Email=email)!=0 THEN
@@ -116,7 +118,7 @@ BEGIN
     end;
 #
 
-create procedure add_photos(in album_name varchar(30),in email varchar(30),in pic blob,out response varchar(40))
+create procedure add_photos(in album_name varchar(30),in email varchar(30),in pic blob,out response varchar(100))
 BEGIN
     declare u_id INTEGER;
     declare a_id INTEGER;
@@ -130,18 +132,18 @@ END;
 #
 
 
-create procedure send_message(in from_email varchar(30), in to_email varchar(30),in msg varchar(1000),out response int (1))
+create procedure send_message(in from_email varchar(30), in to_email varchar(30),in msg varchar(1000),out response varchar (100))
 BEGIN
-    declare t INTEGER;
+    
     declare sender VARCHAR(30);
     declare receiver VARCHAR(30);
-    select UID into sender from UserDetails where Email=sender;
-    select UID into receiver from UserDetails where Email=receiver;
+    select UID into sender from UserDetails where Email=from_email;
+    select UID into receiver from UserDetails where Email=to_email;
 
 
-    if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.Email=sender and Friends.FromUID=receiver) !=0 THEN
-        select MID into t from Messages order by MID desc limit 1; 
-        INSERT into Messages values (t+1,to_uid,from_uid,msg);
+    if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.ToUID=sender and Friends.FromUID=receiver) !=0 THEN
+         
+        INSERT into Messages(ToUID,FromUID,Msg) values (sender,receiver,msg);
         set response:="Message sent";
         select response as 'response';
     end IF;
@@ -150,7 +152,7 @@ END;
 #
 
 
-create procedure sign_in(in EmailID varchar(30), in PassW varchar(30), out response varchar(30) )
+create procedure sign_in(in EmailID varchar(30), in PassW varchar(30), out response varchar(100) )
 BEGIN
     if (select count(*) from UserDetails where UserDetails.Email=EmailID and UserDetails.Pass=PassW) !=0 THEN
         update UserDetails set online_status="Online" where UserDetails.Email=emailID;
@@ -165,42 +167,47 @@ BEGIN
 #
 
 
-create procedure create_friendship(in sender varchar(30),in receiver varchar(30),out response varchar(30))
-BEGIN
-    declare sender VARCHAR(30);
-    declare receiver VARCHAR(30);
-    select UID into sender from UserDetails where Email=sender;
-    select UID into receiver from UserDetails where Email=receiver;
 
-    if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.Email=sender and Friends.FromUID=receiver) !=0 THEN
+
+create procedure create_friendship(in sender varchar(30),in receiver varchar(30),out response varchar(100))
+BEGIN
+    declare sender1 VARCHAR(30);
+    declare receiver1 VARCHAR(30);
+    select UID into sender1 from UserDetails where Email=sender;
+    select UID into receiver1 from UserDetails where Email=receiver;
+
+    if (SELECT count(*) from Friends where Friends.ToUID= receiver1 and Friends.FromUID=sender1 or Friends.ToUID=sender1 and Friends.FromUID=receiver1) !=0 THEN
         set response:="You are already friends";
         select response as 'response';
 
     else 
-        insert into Friends(ToUID,FromUID) values(sender,receiver);
+        insert into Friends(ToUID,FromUID) values(sender1,receiver1);
         set response:="You are Friends now!";
         select response as 'response';
     end if;
     end;
 #
 
-create procedure send_request(in sender1 varchar(30),in receiver1 varchar(30),out response varchar(40))
+create procedure send_request(in sender1 varchar(30),in receiver1 varchar(30),out response varchar(100))
 BEGIN
     declare sender2 Int(10);
     declare receiver2 Int(10);
     select UID into sender2 from UserDetails where Email=sender1;
     select UID into receiver2 from UserDetails where Email=receiver1;
 
-    if (SELECT count(*) from Friends where Friends.ToUID= receiver2 and Friends.FromUID=sender2 or Friends.Email=sender2 and Friends.FromUID=receiver2) !=0 THEN
+    if (SELECT count(*) from Friends where Friends.ToUID= receiver2 and Friends.FromUID=sender2 or Friends.ToUID=sender2 and Friends.FromUID=receiver2) !=0 THEN
         set response:="You are already friends";
         select response as 'response';
-    end if;
-    if (select count(*) from FriendRequests where FriendRequests.sender=sender2 and FriendRequests.reciever=receiver2)!=0 Then
+        
+    
+    elseif (select count(*) from FriendRequests where FriendRequests.sender=sender2 and FriendRequests.receiver=receiver2)!=0 Then
         set response:="You have already sent a request";
         select response as 'response';
 
     ELSE
         insert into FriendRequests(sender,receiver) values(sender2,receiver2);
+        set response:="Request Sent";
+        select response as 'response';
 
     end IF;
     end;
@@ -211,13 +218,13 @@ BEGIN
     DECLARE t varchar(30);
     select UserName into t from UserDetails where UserDetails.Email=email;
     if (SELECT online_status from UserDetails where UserDetails.Email=email) = "Online" THEN
-        set response:= t+"is online";
+        set response:= concat(t," is online");
         select response as 'response';
     end if;
 end;
 #
 
-create PROCEDURE accept_request(in sender1 varchar(30),in reciever1 varchar(30), out response varchar(30))
+create PROCEDURE accept_request(in sender1 varchar(30),in receiver1 varchar(30), out response varchar(100))
 BEGIN
     declare sender2 Int(10);
     declare receiver2 Int(10);
@@ -226,31 +233,39 @@ BEGIN
     select UserName into t from UserDetails where UserDetails.Email=sender1;
     select UID into sender2 from UserDetails where Email=sender1;
     select UID into receiver2 from UserDetails where Email=receiver1;
-    if (select count(*) from FriendRequests where FriendRequests.sender=sender2 and FriendRequests.reciever=receiver2)!=0 Then
+    if (select count(*) from FriendRequests where FriendRequests.sender=sender2 and FriendRequests.receiver=receiver2)!=0 Then
         call create_friendship(sender1,receiver1,op);
-        delete from FriendRequests where sender=sender1 and receiver=receiver1;
-        set response:= "You have accepted the requested of " +t;
+        delete from FriendRequests where sender=sender2 and receiver=receiver2;
+        set response:= CONCAT("You have Accepted the requested of ",t);
         select response as 'response' ;
     end IF;    
 END;
 #
 
-create PROCEDURE cancel_request(in sender1 varchar(30), in receiver1 varchar(30), out response varchar(30))
+create PROCEDURE cancel_request(in sender1 varchar(30), in receiver1 varchar(30), out response varchar(100))
     BEGIN
         DECLARE t varchar(30);
+        declare sender2 Int(10);
+        declare receiver2 Int(10);
         select UserName into t from UserDetails where UserDetails.Email=receiver1;
-        delete from FriendRequests where sender=sender1 and receiver=receiver1;
-        set response:= "You have deleted the requested of " +t;
+        select UID into sender2 from UserDetails where Email=sender1;
+        select UID into receiver2 from UserDetails where Email=receiver1;
+        delete from FriendRequests where sender=sender2 and receiver=receiver2;
+        set response:= CONCAT("You have deleted the requested to ",t);
         select response as 'response' ;
     END;
 #
 
-create PROCEDURE decline_request(in sender1 varchar(30), in receiver1 varchar(30), out response varchar(30))
+create PROCEDURE decline_request(in sender1 varchar(30), in receiver1 varchar(30), out response varchar(100))
     BEGIN
         DECLARE t varchar(30);
+        declare sender2 Int(10);
+        declare receiver2 Int(10);
+        select UID into sender2 from UserDetails where Email=sender1;
+        select UID into receiver2 from UserDetails where Email=receiver1;
         select UserName into t from UserDetails where UserDetails.Email=sender1;
-        delete from FriendRequests where sender=sender1 and receiver=receiver1;
-        set response:= "You have declined the requested of " +t;
+        delete from FriendRequests where sender=sender2 and receiver=receiver2;
+        set response:= concat("You have declined the requested of " ,t);
         select response as 'response' ;
     END;
 #
@@ -278,8 +293,12 @@ CREATE PROCEDURE check_sent_friend_requests(in email varchar(30))
 
 delimiter ;
 
-
+source execution.sql;
 
 
 
 -- insert into Album values(1,1,"profile_photos");
+
+
+
+
