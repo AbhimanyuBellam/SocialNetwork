@@ -27,11 +27,78 @@ CREATE table Messages(MID int(10) primary key,ToUID int(10),FromUID int(10), Mes
 create table FriendRequests(id int(10) primary key auto_increment,sender varchar(30),receiver varchar(30));
 
 
+create table Albums(AID int(10) primary key auto_increment,UID int(10),Aname varchar(30), foreign key(UID) references UserDetails(UID));
+
+create table Gallery (GID int(10) primary key auto_increment,AID int(10),Img blob, foreign key(AID) references Albums(AID));
+
+
+create table Posts(PID int(10) primary key auto_increment,UID int(10),Tweet varchar(1000),Img blob,NumComments int(10),NumLikes int(10));
+
+create table Comments(CID int(10) primary key auto_increment,PID int(10),UIDCommenter int(10),Comment varchar(1000),foreign key(PID) references Posts(PID));
+
+create table Likes (LID int(10) primary key auto_increment,PID int(10),liker int(10),foreign key(PID) references Posts(PID));
+
+
 delimiter #
 
 
+create procedure add_post(in email varchar(30),in tweet_info varchar(1000), in image_to_Add blob,out response varchar(40))
+BEGIN
+    declare u_id INTEGER;
+    select UID into u_id from UserDetails where UserDetails.Email =email; 
+    insert into Posts values(null, u_id,tweet_info,image_to_Add,0,0);
+    set response:="Post Added";
+    select response as 'response';
+END;
+#
+
+create PROCEDURE add_comment(in p_id int(10),in u_id_commenter int(10),in Comment_info varchar(1000),out response varchar(40))
+BEGIN
+    declare t int(10);
+    insert into Comments values(p_id, u_id_commenter,Comment_info);
+    
+    select NumComments into t where Posts.PID=p_id;
+    update Posts set NumComments=t+1 where Posts.PID=p_id;
+    set response:="Comment added";
+    select response as 'response';
+End;
+#
+
+create procedure add_like(in p_id int(10),liker int(10),out response varchar(30))
+BEGIN
+    declare t integer;
+    select NumLikes into t where Posts.PID=p_id;
+    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker) !=0 THEN
+        set response:="You already liked post";
+        select response as 'response';
+    ELSE
+        INSERT into Likes values(Null,p_id,liker);
+        update Posts set NumLikes=t+1 where Posts.PID=p_id;
+        set response:="You liked post successfully";
+        select response as 'response';
+    end if;
+END;
+#
+
+create procedure un_like(in p_id int(10),liker int(10),out response varchar(10))
+BEGIN
+    declare t integer;
+    select NumLikes into t where Posts.PID=p_id;
+    if (select count(*) from Likes where Likes.PID=p_id and Likes.liker=liker) !=0 THEN
+        update Posts set NumLikes=t-1 where Posts.PID=p_id;
+        delete from Likes where Likes.PID=p_id and Likes.liker=liker;
+        set response:="Unliked successfully";
+        select response as 'response';
+    ELSE
+        set response:="You didn't like the post";
+        select response as 'response';
+    end if;    
+END;
+#
+
 create procedure sign_up(in UserName varchar(20) ,in FName varchar(15) ,LName varchar(15) ,email varchar(30),pass_word varchar(30),out response varchar(30))
 BEGIN
+    declare t integer;
     if (select count(*) from UserDetails where UserDetails.Email=email)!=0 THEN
         set response:="Email already exists";
         select response as 'response';
@@ -39,10 +106,27 @@ BEGIN
     else 
         insert into UserDetails(UserName,FName,LName,Email,Pass,online_status)
         values(UserName,FName,LName,email,pass_word,"0");
-            set response:="UR SIGNED UP!";
-            select response as 'response';
+        select UID into t from UserDetails where UserDetails.Email=email;
+        INSERT into Albums values(null,t,"ProfilePhotos");
+        INSERT into Albums values(null,t,"CoverPhotos");
+        INSERT into Albums values(null,t,"MobileUploads");
+        set response:="UR SIGNED UP!";
+        select response as 'response';
     end if;
     end;
+#
+
+create procedure add_photos(in album_name varchar(30),in email varchar(30),in pic blob,out response varchar(40))
+BEGIN
+    declare u_id INTEGER;
+    declare a_id INTEGER;
+    select UID into u_id from UserDetails where UserDetails.Email =email;
+    select AID into a_id from Albums where Albums.UID=u_id and Albums.Aname=album_name;
+    insert into Gallery values(null,a_id,pic);
+    
+    set response:="Photo Added !";
+    select response as 'response';
+END;
 #
 
 
@@ -58,6 +142,8 @@ BEGIN
     if (SELECT count(*) from Friends where Friends.ToUID= receiver and Friends.FromUID=sender or Friends.Email=sender and Friends.FromUID=receiver) !=0 THEN
         select MID into t from Messages order by MID desc limit 1; 
         INSERT into Messages values (t+1,to_uid,from_uid,msg);
+        set response:="Message sent";
+        select response as 'response';
     end IF;
 END;
 
@@ -175,10 +261,25 @@ create PROCEDURE search_friends(in searchName varchar(30))
     END;
 #
 
+CREATE PROCEDURE check_received_friend_requests(in email varchar(30))
+    BEGIN
+        SELECT sender from FriendRequests where FriendRequests.receiver= email ;
+    END;
+#
+
+CREATE PROCEDURE check_sent_friend_requests(in email varchar(30))
+    BEGIN
+        SELECT receiver from FriendRequests where FriendRequests.sender= email ;
+    END;
+#
+
+
+
+
 delimiter ;
 
 
 
--- create table Album(AID int(10) primary key auto_increment,UID int(10),Aname varchar(30), Album(UID) references UserDetails(UID));
+
 
 -- insert into Album values(1,1,"profile_photos");
