@@ -57,9 +57,9 @@ END;
 create PROCEDURE add_comment(in p_id int(10),in u_id_commenter int(10),in Comment_info varchar(1000),out response varchar(100))
 BEGIN
     declare t int(10);
-    insert into Comments values(p_id, u_id_commenter,Comment_info);
+    insert into Comments(PID,UIDCommenter,Comment) values(p_id, u_id_commenter,Comment_info);
     
-    select NumComments into t where Posts.PID=p_id;
+    select NumComments into t from Posts where Posts.PID=p_id;
     update Posts set NumComments=t+1 where Posts.PID=p_id;
     set response:="Comment added";
     select response as 'response';
@@ -270,21 +270,25 @@ create PROCEDURE decline_request(in sender1 varchar(30), in receiver1 varchar(30
     END;
 #
 
-create PROCEDURE search_friends(in searchName varchar(30))
+create PROCEDURE search(in searchName varchar(30))
     BEGIN
         SELECT UserName from UserDetails where UserDetails.UserName like CONCAT("%",searchName,"%");
     END;
 #
 
-CREATE PROCEDURE check_received_friend_requests(in email varchar(30))
+CREATE PROCEDURE check_received_friend_requests(in emailId varchar(30))
     BEGIN
-        SELECT sender from FriendRequests where FriendRequests.receiver= email ;
+        DECLARE t int(10);
+        select UID into t from UserDetails where Email=emailId;
+        SELECT UserName from UserDetails,FriendRequests where FriendRequests.receiver= t and UserDetails.UID=sender;
     END;
 #
 
-CREATE PROCEDURE check_sent_friend_requests(in email varchar(30))
+CREATE PROCEDURE check_sent_friend_requests(in emailId varchar(30))
     BEGIN
-        SELECT receiver from FriendRequests where FriendRequests.sender= email ;
+        DECLARE t int(10);
+        select UID into t from UserDetails where Email=emailId;
+        SELECT UserName from UserDetails,FriendRequests where FriendRequests.sender= t and UserDetails.UID=receiver;
     END;
 #
 

@@ -14,7 +14,7 @@ call send_request("gilla@gmail.com","nimma@gmail.com",@p6);
 -- call decline_request("gilla@gmail.com","nimma@gmail.com",@p7)
 
 
-call cancel_request("gilla@gmail.com","nimma@gmail.com",@p8);
+-- call cancel_request("gilla@gmail.com","nimma@gmail.com",@p8);
 
 
 call sign_in("bellam@gmail.com","1234",@p9);
@@ -38,6 +38,25 @@ call add_post("bellam@gmail.com","First tweet in the dbms",'1.png',@p14);
 
 call add_like(1,3,@p15);
 
+call add_comment(1,3,"wat shit",@p16);
 
+call un_like(1,3,@p15);
 
 select * from Posts;
+
+
+call add_photos("ProfilePhotos","bellam@gmail.com",'1.png',@p17);
+
+call add_photos("ProfilePhotos","gilla@gmail.com",'1.png',@p17);
+
+select * from Gallery;
+
+
+call search("Abhi");
+
+call check_received_friend_requests("nimma@gmail.com");
+call check_sent_friend_requests("gilla@gmail.com");
+
+
+
+
