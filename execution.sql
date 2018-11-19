@@ -36,6 +36,10 @@ select * from Messages;
 
 call add_post("bellam@gmail.com","First tweet in the dbms",'1.png',@p14);
 
+call add_post("gilla@gmail.com","useless PPL",'1.png',@p19);
+
+call add_post("nimma@gmail.com","useless PPL shit",'1.png',@p20);
+
 call add_like(1,3,@p15);
 
 call add_comment(1,3,"wat shit",@p16);
@@ -58,5 +62,9 @@ call check_received_friend_requests("nimma@gmail.com");
 call check_sent_friend_requests("gilla@gmail.com");
 
 
+call home("bellam@gmail.com");
+call home("nimma@gmail.com");
 
 
+-- create table Posts(PID int(10) primary key auto_increment,UID int(10),Tweet varchar(1000),Img blob,NumComments int(10),NumLikes int(10),created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+-- select Img, Tweet,NumLikes,NumComments from Posts cross join Friends where Friends.FromUID=t or Friends.ToUID=t; 

@@ -283,7 +283,20 @@ CREATE PROCEDURE check_received_friend_requests(in emailId varchar(30))
         SELECT UserName from UserDetails,FriendRequests where FriendRequests.receiver= t and UserDetails.UID=sender;
     END;
 #
-
+CREATE PROCEDURE home(in emailID varchar(30))
+    BEGIN
+        DECLARE t int(10);
+        select UID into t from UserDetails where Email=emailId;
+        select Img, Tweet,NumLikes,NumComments from Posts cross join Friends where Friends.ToUID=t; 
+    end;
+    #
+-- CREATE PROCEDURE home_test(in emailID varhar(30))
+--     BEGIN
+--         DECLARE t int(10);
+--         select UID into t from UserDetails where Email=emailId;
+--         select Img, Tweet,NumLikes,NumComments from Posts cross join Friends where Friends.FromUID=t or Friends.ToUID=t; 
+--     END;
+-- #
 CREATE PROCEDURE check_sent_friend_requests(in emailId varchar(30))
     BEGIN
         DECLARE t int(10);
@@ -291,10 +304,6 @@ CREATE PROCEDURE check_sent_friend_requests(in emailId varchar(30))
         SELECT UserName from UserDetails,FriendRequests where FriendRequests.sender= t and UserDetails.UID=receiver;
     END;
 #
-
-
-
-
 delimiter ;
 
 source execution.sql;
